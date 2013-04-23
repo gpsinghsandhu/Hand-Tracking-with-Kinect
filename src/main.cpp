@@ -148,7 +148,7 @@ void Tracker(trackerTest &tracker, int TRACKER_OPTION) {
 	cvtColor(roi, roi, CV_BGR2HSV);
 	calchistforChannel(roi, b_hist, g_hist, r_hist, histSize, (const float*)ranges, maskroi);
 	calcHist( &droi, 1, 0, maskroi, d_hist, 1, &dhistSize, &dhistRange);
-	//normalize(d_hist, d_hist, 0, 400, NORM_MINMAX, -1, Mat() );
+	normalize(d_hist, d_hist, 0, 400, NORM_MINMAX, -1, Mat() );
 
 	drawHist(tracker.img, d_hist, dhistSize, Scalar(0,255,0));
 	MatND backPro, backPro_r, backPro_g, backPro_b, backPro_d;
@@ -163,7 +163,7 @@ void Tracker(trackerTest &tracker, int TRACKER_OPTION) {
 		maskroi = Mat(tracker.mask, tracker.target);
 		//maskroi = Mat();
 		calcHist( &roif, 1, 0, maskroi, d_hist, 1, &dhistSize, &dhistRange);
-		//normalize(d_hist, d_hist, 0, 400, NORM_MINMAX, -1, Mat() );
+		normalize(d_hist, d_hist, 0, 400, NORM_MINMAX, -1, Mat() );
 		calcBackProject(&bgr_planes[0], 1, 0, b_hist, backPro_b, &histRange, 1, true);
 		calcBackProject(&bgr_planes[1], 1, 0, g_hist, backPro_g, &histRange, 1, true);
 		calcBackProject(&bgr_planes[2], 1, 0, r_hist, backPro_r, &histRange, 1, true);
