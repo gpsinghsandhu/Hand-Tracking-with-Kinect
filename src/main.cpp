@@ -17,6 +17,7 @@ const unsigned short SENSOR_MAX = 7000;
 const unsigned char EMPTY = 0;
 const unsigned char HAND = 255;
 
+// Class for grabbing information from kinect and related image objects
 class trackerTest {
 public:
 	Mat img, depthImg, show;
@@ -34,7 +35,7 @@ bool drawing_box;
 
 void selectTarget(trackerTest &);
 void mouse_callback(int event,int x,int y,int flag,void* param);
-void camshiftTracker(trackerTest &);
+void Tracker(trackerTest &, int TRACKER_OPTION = 0);
 void calchistforChannel(Mat &img, Mat &b_hist,Mat &r_hist, Mat &g_hist, int histSize, const float *ranges, Mat &mask);
 void drawHist(Mat &img, Mat &hist, int histSize,  Scalar color);
 void morphologyTosegment(Mat &);
@@ -57,7 +58,7 @@ int main(void) {
 	tracker.cap.grab();
 	tracker.cap.retrieve(tracker.img, CV_CAP_OPENNI_BGR_IMAGE);
 	selectTarget(tracker);
-	camshiftTracker(tracker);
+	Tracker(tracker);
 	//while(1) {
 	//	tracker.update();
 	//	rectangle(tracker.img, tracker.target, Scalar(0,255,0), 1);
@@ -72,6 +73,7 @@ int main(void) {
 void selectTarget(trackerTest &tracker) {
 
 	Mat temp;
+	cout << "Drag the mouse on the image for selecting the area. Try to select a tight bounding rect\n";
 	setMouseCallback("gp",mouse_callback,(void*) &temp);
 	while(selected == false) {
 		tracker.cap.grab();
@@ -128,7 +130,7 @@ void trackerTest::update(void) {
 
 }
 
-void camshiftTracker(trackerTest &tracker) {
+void Tracker(trackerTest &tracker, int TRACKER_OPTION) {
 	Mat roi(tracker.img, tracker.target);
 	Mat droid(tracker.depthImg.size(), CV_8UC1);
 	Mat maskroi(tracker.mask, tracker.target);
@@ -173,16 +175,24 @@ void camshiftTracker(trackerTest &tracker) {
 		//backPro = (backPro)*(255);
 		//multiply(backPro, backPro_r, backPro, 1./255);
 		//backPro = (backPro)*(1./255);
-		//RotatedRect trackBox = CamShift(backPro, tracker.target, TermCriteria( CV_TERMCRIT_EPS | CV_TERMCRIT_ITER, 10, 1 ));
-		meanShift(backPro, tracker.target, TermCriteria( CV_TERMCRIT_EPS | CV_TERMCRIT_ITER, 20, 0.1 ));
-		if( tracker.target.area() <= 1 ) {
-			int cols = roi.cols, rows = roi.rows, r = (MIN(cols, rows) + 5)/6;
-			tracker.target = Rect(tracker.target.x - r, tracker.target.y - r,tracker.target.x + r, tracker.target.y + r) & Rect(0, 0, cols, rows);
+		cvtColor(tracker.img, tracker.img, CV_HSV2BGR);
+		if(TRACKER_OPTION == 0) {
+			meanShift(backPro, tracker.target, TermCriteria( CV_TERMCRIT_EPS | CV_TERMCRIT_ITER, 20, 0.1 ));
+			if( tracker.target.area() <= 1 ) {
+				int cols = roi.cols, rows = roi.rows, r = (MIN(cols, rows) + 5)/6;
+				tracker.target = Rect(tracker.target.x - r, tracker.target.y - r,tracker.target.x + r, tracker.target.y + r) & Rect(0, 0, cols, rows);
+			}
+			rectangle(tracker.img, tracker.target, Scalar(0,255,0), 1);
+		}
+		else {
+			RotatedRect trackBox = CamShift(backPro, tracker.target, TermCriteria( CV_TERMCRIT_EPS | CV_TERMCRIT_ITER, 10, 1 ));
+			ellipse(tracker.img, trackBox, Scalar(0,255,0), 1);
+			if( tracker.target.area() <= 1 ) {
+				int cols = roi.cols, rows = roi.rows, r = (MIN(cols, rows) + 5)/6;
+				tracker.target = Rect(tracker.target.x - r, tracker.target.y - r,tracker.target.x + r, tracker.target.y + r) & Rect(0, 0, cols, rows);
+			}
 		}
 		//tracker.target = trackBox.boundingRect();
-		cvtColor(tracker.img, tracker.img, CV_HSV2BGR);
-		//ellipse(tracker.img, trackBox, Scalar(0,255,0), 1);
-		rectangle(tracker.img, tracker.target, Scalar(0,255,0), 1);
 		imshow("backProjected", backPro);
 		imshow("tracked",tracker.img);
 		if(waitKey(20) == 32)
@@ -192,6 +202,8 @@ void camshiftTracker(trackerTest &tracker) {
 	imshow("backProjected", backPro);
 	imshow("roi", roi);
 }
+
+//calculate
 
 void calchistforChannel(Mat &img, Mat &b_hist,Mat &g_hist, Mat &r_hist, int histSize, const float *ranges, Mat &mask) {
 	vector<Mat> bgr_planes;
@@ -241,6 +253,8 @@ void drawHist(Mat &img, Mat &hist, int histSize,  Scalar color) {
 	imshow("hist", img);
 	//waitKey(0);
 }
+
+// 3D region segmentation process
 
 void morphologyTosegment(Mat &img) {
 	//erode(img, img, Mat());
